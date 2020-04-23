@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <title>Instasource</title>
+  <script src="lib/codemirror.js"></script>
+  <script src="addon/edit/matchbrackets.js"></script>
+  <script src="addon/edit/closebrackets.js"></script>
+  <script src="addon/comment/continuecomment.js"></script>
+  <script src="addon/comment/comment.js"></script>
+
+  <link rel="stylesheet" href="lib/codemirror.css">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #e5e5e5;
+    }
+
+    div.windowbar {
+      padding-left: 10px;
+      padding-bottom: 5px;
+    }
+
+    div.desktop {
+      width: 530px;
+      height: 530px;
+      background-color: rgb(107, 162, 207);
+      padding: 1.2em;
+    }
+
+    div.shotarea {
+      background-color: rgb(31, 29, 29);
+      border-radius: 5px;
+      box-shadow: 4px 4px 19px 3px rgba(0,0,0,0.43);
+    }
+
+    .CodeMirror {
+      padding-left: 0.5em;
+      padding-right: 0.5em;
+      height: 470px;
+      font-family: 'Source Code Pro', monospace;
+      font-size: 14px;
+      border-bottom-left-radius: 5px;
+      border-bottom-right-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Instasource</h2>
+  <div class="desktop">
+    <div class="shotarea">
+      <div class="windowbar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg>
+      </div>
+      <textarea id="sourceCode" style="display:none"></textarea>
+    </div>
+  </div>
+</body>
+
+<script>
+  let {
+    editor,
+    editorCurrentMode,
+    editorCurrentTheme
+  } = setupEditor();
+  setMode(editorCurrentMode);
+  setTheme(editorCurrentTheme);
+
+  function setupEditor() {
+
+    const editorCurrentMode = localStorage.getItem("editorMode") || undefined;
+
+    const editorCurrentTheme = localStorage.getItem("editorTheme") || undefined;
+
+    const sourceCodeTextarea = document.getElementById("sourceCode");
+
+    sourceCodeTextarea.onkeyup = () => {
+      localStorage.setItem("content", sourceCodeTextarea.textContent);
+    };
+
+    const editor = CodeMirror.fromTextArea(sourceCodeTextarea, {
+      // lineNumbers: true,
+      matchBrackets: true
+    });
+
+    const previousContent = localStorage.getItem("content");
+    editor.on("blur", () => {
+      console.log("text changed?", editor.getValue());
+      const savedLength = previousContent ? previousContent.length : 0;
+      if (savedLength != editor.getValue().length) {
+        localStorage.setItem("content", editor.getValue());
+      }
+    });
+
+    if (previousContent) {
+      editor.setValue(previousContent);
+    };
+
+    return {
+      editor,
+      editorCurrentMode,
+      editorCurrentTheme
+    };
+  }
+
+  function setMode(name) {
+
+    if (typeof name == 'undefined') return;
+
+    const currentScriptMode = document.getElementById(editorCurrentMode);
+    if (currentScriptMode) currentScriptMode.parentNode.removeChild(currentScriptMode);
+
+    editorCurrentMode = `mode-${name}`;
+
+    const src = document.createElement("script");
+    src.type = "text/javascript";
+    src.src = `mode/${name}/${name}.js`;
+    src.id = editorCurrentMode;
+    document.body.appendChild(src);
+
+    src.onload = () => {
+      editor.setOption("mode", name);
+    };
+
+    src.onerror = function (err) {
+      console.log("Error loading language mode: ", err);
+    }
+
+    localStorage.setItem("editorMode", name);
+  }
+
+  function setTheme(name) {
+
+    if (typeof name == 'undefined') return;
+    const currentLinkTheme = document.getElementById(editorCurrentTheme);
+    if (currentLinkTheme) currentLinkTheme.parentNode.removeChild(currentLinkTheme);
+    editorCurrentTheme = `theme-${name}`;
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `theme/${name}.css`;
+    link.id = editorCurrentTheme;
+    link.onload = () => {
+      editor.setOption("theme", name);
+    }
+    document.head.appendChild(link);
+
+    link.onerror = (err) => {
+      console.log("Error loading theme: ", err);
+    }
+
+    localStorage.setItem("editorTheme", name);
+  }
+
+  function increaseFontSize() {
+    const codeMirrorDiv = document.querySelector("div.CodeMirror");
+    const currentFontSize = codeMirrorDiv.style.fontSize;
+    let size = "16px";
+    if (currentFontSize) {
+      size = `${Number.parseInt(currentFontSize) + 2}px`;
+    }
+    codeMirrorDiv.style.fontSize = size;
+  }
+
+  function decreaseFontSize() {
+    const codeMirrorDiv = document.querySelector("div.CodeMirror");
+    const currentFontSize = codeMirrorDiv.style.fontSize;
+    let size = "16px";
+    if (currentFontSize) {
+      size = `${Number.parseInt(currentFontSize) - 2}px`;
+    }
+    codeMirrorDiv.style.fontSize = size;
+  }
+
+</script>
+
+</html>
